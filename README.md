@@ -1,4 +1,4 @@
-# Attack Sense AI - DoS, DDoS Attack Detection Model Code Repository
+# Attack Sense AI - DoS/DDoS Attack Detection Model Code Repository
 
 This repository provides the codebase used in the research study associated with the dataset **HyNetSys: Hybrid Network and System Dataset for DoS and DDoS Attack Detection**.
 
