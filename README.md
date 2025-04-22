@@ -1,1 +1,1 @@
-# DDAP---DoS-DDoS-Attack-Detection-model
+# DDAP- DoS/DDoS Attack Detection Model
