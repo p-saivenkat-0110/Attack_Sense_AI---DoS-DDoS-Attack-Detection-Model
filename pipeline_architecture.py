@@ -1,11 +1,12 @@
 import threading
 import numpy as np
 import pandas as pd
+import signal
+from time import sleep
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 from plyer import notification
-
 
 class Model:
     def __init__(self, model_path):
@@ -16,26 +17,27 @@ class Model:
         prediction = self.model.predict(window_data, verbose=0)
         return np.argmax(prediction)
 
-class WindowFetcher:
+class Window_Fetcher:
     def __init__(self):
-        data_path = os.path.join(os.getcwd(),"Sample Dataset/stream.csv")
-        self.__df = pd.read_csv(data_path, parse_dates=['Timestamp'])
-        self.tmp = self.__df
+        self.__data_path = os.path.join(os.getcwd(),"NET_SYS/net_sys_stream.csv")
+        self.net_sys_stream = pd.read_csv(self.__data_path, parse_dates=['Timestamp'])
 
     def fetch_past_K_minute_data(self, timestamp, window_size):
-        df = self.__df.copy()
-        endTimestamp = timestamp.strftime('%Y-%m-%d %H:%M')
-        df['group'] = df['Timestamp'].dt.strftime('%Y-%m-%d %H:%M')
-        df = df.set_index('group')
-        minutes = sorted(list(set(df.index)))
-        endIndex = minutes.index(endTimestamp)+1
-        startIndex = max(0, endIndex-window_size)
-        windowed_df = df.loc[minutes[startIndex:endIndex],:].drop(['Timestamp','Label'],axis=1)
-        windowed_df = np.array(windowed_df.values)
+        try:
+            df = pd.read_csv(self.__data_path, parse_dates=['Timestamp'])
+            endTimestamp = timestamp.strftime('%Y-%m-%d %H:%M')
+            df['group'] = df['Timestamp'].dt.strftime('%Y-%m-%d %H:%M')
+            df = df.set_index('group')
+            minutes = sorted(list(set(df.index)))
+            endIndex = minutes.index(endTimestamp)+1
+            startIndex = max(0, endIndex-window_size)
+            windowed_df = df.loc[minutes[startIndex:endIndex],:].drop(['Timestamp','Label'],axis=1)
+            windowed_df = np.array(windowed_df.values)
+        except:
+            windowed_df = np.array([])
         return windowed_df
     
-
-class ParallelExecuter(threading.Thread):
+class Parallel_Executer(threading.Thread):
     def __init__(self, name, model, window_fetcher, queue_in, queue_out, window_size):
         super().__init__()
         self.name = name
@@ -49,11 +51,13 @@ class ParallelExecuter(threading.Thread):
 
     def __notify(self, timestamp, attackType):
         print(f"\033[1;31m[{self.name}] : ALERT!! {attackType} detected at {timestamp}\033[1;0m")
-        # notification.notify(
-        #             title=f"⚠️ {attackType} Attack Detected!!",
-        #             message=f"{self.name} model detected attack at {timestamp}",
-        #             timeout=5
-        #         )
+        notification.notify(
+                    title=f"⚠️ {attackType} Attack Detected!!",
+                    message=f"{self.name} model detected attack at {timestamp}",
+                    timeout=5
+                )
+        sleep(0.1)
+        os.kill(os.getpid(), signal.SIGINT)
 
     def run(self):
         while True:
