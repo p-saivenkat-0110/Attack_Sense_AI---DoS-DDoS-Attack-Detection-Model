@@ -1,6 +1,10 @@
 from time import sleep
+from datetime import datetime
 from queue import Queue
 from pipeline_architecture import *
+from data_preprocessing import *
+from collect_network_traffic import *
+from collect_system_metrics import *
 
 class HyNetSys:
     def __init__(self, choosen_models):
@@ -12,14 +16,32 @@ class HyNetSys:
             "./GRU_models/Layer 1/GRU_4min.h5",
             "./GRU_models/Layer 1/GRU_5min.h5"
         ]
-        
+
+        self.__dataCollectorPath = "NET_SYS"
+        self.system_data_collector  = self.__initialize_system_metrics_collector()
+        self.network_data_collector = self.__initialize_network_traffic_collector()
         self.fetcher   = self.__initialize_window_fetcher()
         self.queues    = self.__initialize_queues(choosen_models)
         self.models    = self.__initialize_models(model_paths, choosen_models)
         self.executers = self.__initialize_pipeline(choosen_models)
+        self.__observe_network_and_system_data()
+    
+    def __initialize_system_metrics_collector(self):
+        system_data_collector_object = Collect_System_Metrics()
+        print("----------------------------------------")
+        print("  Initialized System Data Collector...")
+        print("----------------------------------------\n")
+        return system_data_collector_object
+
+    def __initialize_network_traffic_collector(self):
+        network_data_collector_object = Collect_Network_Traffic()
+        print("----------------------------------------")
+        print("  Initialized Network Data Collector...")
+        print("----------------------------------------\n")
+        return network_data_collector_object
 
     def __initialize_window_fetcher(self):
-        fetcher = WindowFetcher()
+        fetcher = Window_Fetcher()
         print("----------------------------------------")
         print("       Initialized Data Fetcher...")
         print("----------------------------------------\n")
@@ -49,7 +71,7 @@ class HyNetSys:
         print("----------------------------------------")
         executers = []
         for index in range(len(choosen_models)):
-            exe = ParallelExecuter(
+            exe = Parallel_Executer(
                 f"GRU-{choosen_models[index]}min", self.models[index],
                 self.fetcher,
                 self.queues[index], self.queues[index+1],
@@ -61,27 +83,65 @@ class HyNetSys:
         print("----------------------------------------\n")
         return executers
 
-    def activate_pipeline(self):
+    def __observe_network_and_system_data(self):
+        print("----------------------------------------------")
+        print(self.network_data_collector.name, "=> started... running...")
+        # self.network_data_collector.start()
+
+        print(self.system_data_collector.name, "=> started... running...")
+        # self.system_data_collector.start()
+        print("----------------------------------------------\n\n")
+        print("******************************************************\n**  Observing Network Traffic & System Metrics...   **\n******************************************************\n\n")
+
+    def activate_and_run_pipeline(self):
         print("----------------------------------------")
         for executer in self.executers:
             print(executer.name, "=> started... running...")
             executer.start()
         print("----------------------------------------\n\n")
         print("***************************\n**  Pipeline Activated   **\n***************************\n\n")
-    
-    def run_pipeline(self):
-        while True:
-            print("\n--- Model Status ---")
-            for model in self.executers:
-                status = "✅ Alive" if model.is_alive() else "❌ Dead"
-                print(f"[{model.name}]: {status}")
-            print("--------------------------------------------\n")
-            for index, queue in enumerate(self.queues,1):
-                if queue:
-                    print(f"Q{index} -> {queue.qsize()}")
-            print("--------------------------------------------\n\n")
-            sleep(30)
 
+    def feedDataToPipeline(self):
+        net_sys_update_timer = 0
+        status_timer = 0
+
+        for timestamp in sorted(list(set(self.fetcher.net_sys_stream['Timestamp']))):
+            if(status_timer==0):
+                self.pipeline_status()
+            status_timer = (status_timer+1)%30
+            self.queues[0].put(timestamp)
+            sleep(1)
+
+        while True:
+            if(status_timer==0):
+                self.pipeline_status()
+            status_timer = (status_timer+1)%30
+            
+            # if(net_sys_update_timer==0):
+            #     self.update_net_sys_stream()
+            # net_sys_update_timer = (net_sys_update_timer+1)%5
+
+            # current_timestamp = datetime.now()
+            # self.queues[0].put(current_timestamp)
+            sleep(1)
+
+    def update_net_sys_stream(self):  
+        preprocessor = Data_Preprocessing(self.__dataCollectorPath)
+        network_df = preprocessor.dataset.network
+        system_df  = preprocessor.dataset.system
+        merged_df  = preprocessor.preprocess(network_df, system_df)
+        merged_df.to_csv(f"./{self.__dataCollectorPath}/net_sys_stream.csv", index = False)
+
+    def pipeline_status(self):
+        print("\n--- Model Status ---")
+        for model in self.executers:
+            status = "✅ Alive" if model.is_alive() else "❌ Dead"
+            print(f"[{model.name}]: {status}")
+        print("--------------------------------------------\n")
+        for index, queue in enumerate(self.queues,1):
+            if queue:
+                print(f"Q{index} -> {queue.qsize()}")
+        print("--------------------------------------------\n\n")
 try:
     print()
     print("**************************")
@@ -135,20 +195,12 @@ try:
     print()
     print()
     hynetsys_object = HyNetSys(choosen_models)
-
-    """
-    Simulating Real-World fetching of timestamps.
-    Timestamps from `stream.csv` file is added to main Queue.
-    """
-    timestamps = list(set(hynetsys_object.fetcher.tmp['Timestamp']))
-    for ts in sorted(timestamps):
-        hynetsys_object.queues[0].put(ts)
-
-    hynetsys_object.activate_pipeline()
-    hynetsys_object.run_pipeline()
+    hynetsys_object.activate_and_run_pipeline()
+    hynetsys_object.feedDataToPipeline()    
     
-    print("hello...")
 except KeyboardInterrupt:
     print("Exiting pipeline...")
+    # hynetsys_object.system_data_collector.stop_collection()
+    # hynetsys_object.network_data_collector.append_to_network_stream()
 except Exception as error:
     print(error)

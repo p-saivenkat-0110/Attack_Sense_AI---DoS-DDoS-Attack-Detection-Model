@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+import joblib
 
 # The `Utilities` class contains attributes used for data preprocessing and feature scaling.
 class Utilities:
@@ -11,46 +11,47 @@ class Utilities:
         self.single_value_columns = ['Fwd PSH Flags', 
                                      'Fwd URG Flags', 
                                      'Bwd URG Flags', 
-                                     'URG Flag Cnt', 
-                                     'CWE Flag Count', 
-                                     'ECE Flag Cnt', 
-                                     'Fwd Byts/b Avg', 
-                                     'Fwd Pkts/b Avg', 
-                                     'Fwd Blk Rate Avg', 
-                                     'Bwd Byts/b Avg', 
-                                     'Bwd Pkts/b Avg', 
-                                     'Bwd Blk Rate Avg', 
-                                     'Init Fwd Win Byts', 
+                                     'URG Flag Count', 
+                                     'CWR Flag Count', 
+                                     'ECE Flag Count', 
+                                     'Fwd Bytes/Bulk Avg', 
+                                     'Fwd Packet/Bulk Avg', 
+                                     'Fwd Bulk Rate Avg', 
+                                     'Bwd Bytes/Bulk Avg', 
+                                     'Bwd Packet/Bulk Avg', 
+                                     'Bwd Bulk Rate Avg', 
+                                     'FWD Init Win Bytes', 
                                      'Fwd Seg Size Min' ]
         
+
         # `agg_dict` contains features for Network-level data with statistical method applied to each feature
         # for aggreagtion of network-level data to convert `Timestamp` from milliseconds resolution to seconds resolution .
         self.agg_dict = {
                             'Flow Duration'     : 'mean',
-                            'Tot Fwd Pkts'      : 'sum',
-                            'Tot Bwd Pkts'      : 'sum',
-                            'TotLen Fwd Pkts'   : 'mean',
-                            'TotLen Bwd Pkts'   : 'mean',
-                            'Fwd Pkt Len Max'   : 'max',
-                            'Fwd Pkt Len Min'   : 'min',
-                            'Fwd Pkt Len Mean'  : 'mean',
-                            'Fwd Pkt Len Std'   : 'mean',
-                            'Bwd Pkt Len Max'   : 'max',
-                            'Bwd Pkt Len Min'   : 'min',
-                            'Bwd Pkt Len Mean'  : 'mean',
-                            'Bwd Pkt Len Std'   : 'mean',
-                            'Flow Byts/s'       : 'mean',
-                            'Flow Pkts/s'       : 'mean',
+                            'Total Fwd Packet'  : 'sum',
+                            'Total Bwd packets' : 'sum',
+                            'Total Length of Fwd Packet'   : 'mean',
+                            'Total Length of Bwd Packet'   : 'mean',
+                            'Fwd Packet Length Max'   : 'max',
+                            'Fwd Packet Length Min'   : 'min',
+                            'Fwd Packet Length Mean'  : 'mean',
+                            'Fwd Packet Length Std'   : 'mean',
+                            'Bwd Packet Length Max'   : 'max',
+                            'Bwd Packet Length Min'   : 'min',
+                            'Bwd Packet Length Mean'  : 'mean',
+                            'Bwd Packet Length Std'   : 'mean',
+                            'Flow Bytes/s'       : 'mean',
+                            'Flow Packets/s'       : 'mean',
                             'Flow IAT Mean'     : 'mean',
                             'Flow IAT Std'      : 'mean',
                             'Flow IAT Max'      : 'max',
                             'Flow IAT Min'      : 'min',
-                            'Fwd IAT Tot'       : 'mean',
+                            'Fwd IAT Total'       : 'mean',
                             'Fwd IAT Mean'      : 'mean',
                             'Fwd IAT Std'       : 'mean',
                             'Fwd IAT Max'       : 'max',
                             'Fwd IAT Min'       : 'min',
-                            'Bwd IAT Tot'       : 'mean',
+                            'Bwd IAT Total'       : 'mean',
                             'Bwd IAT Mean'      : 'mean',
                             'Bwd IAT Std'       : 'mean',
                             'Bwd IAT Max'       : 'max',
@@ -59,39 +60,39 @@ class Utilities:
                             'Bwd PSH Flags'     : 'mean',
                             'Fwd URG Flags'     : 'mean',
                             'Bwd URG Flags'     : 'mean',
-                            'Fwd Header Len'    : 'mean',
-                            'Bwd Header Len'    : 'mean',
-                            'Fwd Pkts/s'        : 'mean',
-                            'Bwd Pkts/s'        : 'mean',
-                            'Pkt Len Min'       : 'min',
-                            'Pkt Len Max'       : 'max',
-                            'Pkt Len Mean'      : 'mean',
-                            'Pkt Len Std'       : 'mean',
-                            'Pkt Len Var'       : 'mean',
-                            'FIN Flag Cnt'      : 'sum',
-                            'SYN Flag Cnt'      : 'sum',
-                            'RST Flag Cnt'      : 'sum',
-                            'PSH Flag Cnt'      : 'sum',
-                            'ACK Flag Cnt'      : 'sum',
-                            'URG Flag Cnt'      : 'sum',
-                            'CWE Flag Count'    : 'sum',
-                            'ECE Flag Cnt'      : 'sum',
+                            'Fwd Header Length'    : 'mean',
+                            'Bwd Header Length'    : 'mean',
+                            'Fwd Packets/s'        : 'mean',
+                            'Bwd Packets/s'        : 'mean',
+                            'Packet Length Min'       : 'min',
+                            'Packet Length Max'       : 'max',
+                            'Packet Length Mean'      : 'mean',
+                            'Packet Length Std'       : 'mean',
+                            'Packet Length Variance'       : 'mean',
+                            'FIN Flag Count'      : 'sum',
+                            'SYN Flag Count'      : 'sum',
+                            'RST Flag Count'      : 'sum',
+                            'PSH Flag Count'      : 'sum',
+                            'ACK Flag Count'      : 'sum',
+                            'URG Flag Count'      : 'sum',
+                            'CWR Flag Count'      : 'sum',
+                            'ECE Flag Count'      : 'sum',
                             'Down/Up Ratio'     : 'mean',
-                            'Pkt Size Avg'      : 'mean',
-                            'Fwd Seg Size Avg'  : 'mean',
-                            'Bwd Seg Size Avg'  : 'mean',
-                            'Fwd Byts/b Avg'    : 'mean',
-                            'Fwd Pkts/b Avg'    : 'mean',
-                            'Fwd Blk Rate Avg'  : 'mean',
-                            'Bwd Byts/b Avg'    : 'mean',
-                            'Bwd Pkts/b Avg'    : 'mean',
-                            'Bwd Blk Rate Avg'  : 'mean',
-                            'Subflow Fwd Pkts'  : 'mean',
-                            'Subflow Fwd Byts'  : 'mean',
-                            'Subflow Bwd Pkts'  : 'mean',
-                            'Subflow Bwd Byts'  : 'mean',
-                            'Init Fwd Win Byts' : 'mean',
-                            'Init Bwd Win Byts' : 'mean',
+                            'Average Packet Size'      : 'mean',
+                            'Fwd Segment Size Avg'  : 'mean',
+                            'Bwd Segment Size Avg'  : 'mean',
+                            'Fwd Bytes/Bulk Avg'    : 'mean',
+                            'Fwd Packet/Bulk Avg'    : 'mean',
+                            'Fwd Bulk Rate Avg'  : 'mean',
+                            'Bwd Bytes/Bulk Avg'    : 'mean',
+                            'Bwd Packet/Bulk Avg'    : 'mean',
+                            'Bwd Bulk Rate Avg'  : 'mean',
+                            'Subflow Fwd Packets'  : 'mean',
+                            'Subflow Fwd Bytes'  : 'mean',
+                            'Subflow Bwd Packets'  : 'mean',
+                            'Subflow Bwd Bytes'  : 'mean',
+                            'FWD Init Win Bytes' : 'mean',
+                            'Bwd Init Win Bytes' : 'mean',
                             'Fwd Act Data Pkts' : 'sum',
                             'Fwd Seg Size Min'  : 'min',
                             'Active Mean'       : 'mean',
@@ -127,65 +128,53 @@ class Utilities:
                                'Processor Information(% Processor Time)']
 
 # `LoadDataset` class loads network and system data from specified folders in a dataset.
-class LoadDataset:
-    def __init__(self,folder):
+class Load_Data:
+    def __init__(self,folder,system_columns):
         """ LOAD NETWORK & SYSTEM DATA """
-        data = self.__load_Network_System_from(folder)
+        data = self.__load_Network_System_from(folder,system_columns)
         self.network = data[0]
         self.system  = data[1]
 
-    def __load_Network_System_from(self, location):
-        folder = os.path.join(os.getcwd(),f"Sample Dataset/{location}")
+    def __load_Network_System_from(self, location, system_columns):
+        folder = os.path.join(os.getcwd(),f"{location}")
 
         """ LOAD NETWORK DATA """
-        network_csv = []
-        network = os.path.join(folder, f"NETWORK")
-        for file in os.listdir(network):
-            file_path = os.path.join(network, file)
-            network_csv.append(pd.read_csv(file_path))
+        network_df  = None
+        network_csv = os.path.join(folder, r"NETWORK\network_stream.csv")
+        if os.path.isfile(network_csv):
+            network_df = pd.read_csv(network_csv)
+            network_df['Timestamp'] = pd.to_datetime(network_df['Timestamp'], format="%m/%d/%Y %I:%M:%S %p")
+            network_df['Timestamp'] = network_df['Timestamp'].dt.strftime("%m/%d/%Y %H:%M:%S")
 
         """ LOAD SYSTEM DATA """
-        system_csv  = []
-        system  = os.path.join(folder, f"SYSTEM")
-        for file in os.listdir(system):
-            file_path = os.path.join(system, file)
-            system_csv.append(pd.read_csv(file_path))
-
-        return (network_csv, system_csv)
+        system_df  = None
+        system_csv = os.path.join(folder, r"SYSTEM\system_stream.csv")
+        if os.path.isfile(system_csv):
+            system_df = pd.read_csv(system_csv)
+            system_df.columns = ['Timestamp']+system_columns
+            system_df['Timestamp'] = pd.to_datetime(system_df['Timestamp'], format="%d/%m/%Y %H:%M:%S.%f", errors='coerce')
+            system_df['Timestamp'] = system_df['Timestamp'].dt.strftime("%m/%d/%Y %H:%M:%S")
+        return (network_df, system_df)
         
 # `Normalization` class defines methods for preparing and applying min-max and z-score normalization 
 # on network and system-level features of a dataset.
 class Normalization(Utilities):
     def __init__(self):
         super().__init__()
-        network_part, system_part = self.__prepareNormalizationSetterDataset()
-        self.__prepareNetworkScaler(network_part)
-        self.__prepareSystemScaler(system_part)
-            
-    def __prepareNormalizationSetterDataset(self):
-        """
-        The function uses combined dataset (Raw_Dataset.csv) for creating normalization objects by reading a CSV file, 
-        and separating Network part & System Part.
-        """
-        file_path = os.path.join(os.getcwd(),"Dataset/Raw_Dataset.csv")
-        normalizationSetterDataset = pd.read_csv(file_path).drop(self.single_value_columns, axis=1)
-        network_part = normalizationSetterDataset.drop(self.key_columns+self.system_columns+["Label"], axis=1)
-        system_part  = normalizationSetterDataset[self.system_columns]
-        return (network_part,system_part)
+        self.__prepareNetworkScaler()
+        self.__prepareSystemScaler()
 
-    def __prepareNetworkScaler(self, network_part):
+    def __prepareNetworkScaler(self):
         """
         This function creates a MinMaxScaler object and fits it to a Network-level data of entire dataset.
         """
-        self.network_scaler = MinMaxScaler()
-        self.network_scaler.fit(network_part)
+        self.network_scaler = joblib.load(r".\Scalers\MinMaxScaler.save")
     
-    def prepareSystemScaler(self,system_part):
+    def __prepareSystemScaler(self):
         """
         This function creates a StandardScaler object and fits it to a System-level data of entire dataset.
         """
-        self.system_scaler = StandardScaler()
-        self.system_scaler.fit(system_part)
+        self.system_scaler = joblib.load(r".\Scalers\StandardScaler.save")
         
     def min_max_normalization(self, df):
         """
@@ -211,10 +200,10 @@ class Preprocessing(Normalization):
     def __init__(self):
         super().__init__()
 
-    def __aggregate_NETWORK_DATA_based_on_KEY_COLUMNS(self,df):
+    def __aggregate_NETWORK_DATA_based_on_KEY_COLUMNS(self, df):
         df = df.drop(["Flow ID","Src IP","Dst IP"], axis=1)
-        df['Timestamp'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], dayfirst=True)
-        df = df.drop(["Date","Time"], axis=1)
+        # df['Timestamp'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], dayfirst=True)
+        # df = df.drop(["Date","Time"], axis=1)
         df = df.drop(self.single_value_columns,axis=1)
         df = df.groupby(self.key_columns).agg(self.agg_dict)
         return df
@@ -222,9 +211,9 @@ class Preprocessing(Normalization):
     def preprocess_NETWORK_DATA(self, df):
         df = self.__aggregate_NETWORK_DATA_based_on_KEY_COLUMNS(df)
         # Interpolate NULL values
-        df["Flow Byts/s"] = df["Flow Byts/s"].interpolate(method='linear')
+        df["Flow Bytes/s"] = df["Flow Bytes/s"].interpolate(method='linear')
         # Handling 'inf' values by applying HIGH THRESHOLDING & LOG TRANSFORMATION
-        for col in ["Flow Byts/s", "Flow Pkts/s"]:
+        for col in ["Flow Bytes/s", "Flow Packets/s"]:
             # Clip at the 99th percentile
             df[col] = df[col].replace([np.inf, -np.inf], np.nan)
             max_value = (df[col].quantile(0.99))**10
@@ -236,8 +225,8 @@ class Preprocessing(Normalization):
         return df
 
     def preprocess_SYSTEM_DATA(self, df):
-        df['Timestamp'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], dayfirst=True)
-        df = df.drop(["Date","Time"], axis=1)
+        # df['Timestamp'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], dayfirst=True)
+        # df = df.drop(["Date","Time"], axis=1)
         for col in self.system_columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
             df[col] = df[col].interpolate(method='linear')

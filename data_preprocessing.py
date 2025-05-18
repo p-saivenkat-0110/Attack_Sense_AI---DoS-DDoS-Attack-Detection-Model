@@ -1,29 +1,15 @@
 from data_fetcher import *
 
-class DataPreprocessing(Preprocessing):
+class Data_Preprocessing(Preprocessing):
     def __init__(self,folder):
         super().__init__()
-        self.dataset = LoadDataset(folder)
+        self.dataset = Load_Data(folder, self.system_columns)
 
-    def preprocess_NETWORK_SYSTEM(self, network_file, system_file):
-        network = []
-        system  = []
-        for network_data, system_data in zip(network_file, system_file):
-            network.append(self.preprocess_NETWORK_DATA(network_data))
-            system.append(self.preprocess_SYSTEM_DATA(system_data))
-        return (network, system)
-
-    def merge_NETWORK_SYSTEM(self, network, system, label):
-        merged_data = []
-        for network_data, system_data in zip(network, system):
-            merged_data.append(self.merge_network_system(network_data,system_data,label))
-        return merged_data
-
-    def preprocess(self, network_file, system_file, label=-1):
-        network, system = self.preprocess_NETWORK_SYSTEM(network_file, system_file)
-        merged_network_system = self.merge_NETWORK_SYSTEM(network, system, label)
+    def preprocess(self, network_df, system_df, label=-1):
+        network = self.preprocess_NETWORK_DATA(network_df)
+        system  = self.preprocess_SYSTEM_DATA(system_df)
+        merged_network_system = self.merge_network_system(network,system,label)
         return merged_network_system
-
 
 """
 Below is template code (# commented) for Data Preprocessing...
@@ -32,13 +18,13 @@ Set folder name, Run and Boom...
 This file is saved as `stream.csv` which is used for simulating Real-World Scenerio.
 """
 
-# folder = "TEST"
-# preprocessor = DataPreprocessing(folder)
+# folder = "NET_SYS"
+# preprocessor = Data_Preprocessing(folder)
 
-# network_file = preprocessor.dataset.network
-# system_file  = preprocessor.dataset.system
-# merged_file  = preprocessor.preprocess(network_file, system_file)
+# network_df = preprocessor.dataset.network
+# system_df  = preprocessor.dataset.system
+# merged_df  = preprocessor.preprocess(network_df, system_df)
 
-# print(merged_file[0].info())
-# print(merged_file[0].shape)
-# merged_file[0].to_csv("./Sample Dataset/stream.csv", index = False)
+# # print(merged_df.info())
+# # print(merged_df.shape)
+# merged_df.to_csv(f"./{folder}/net_sys_stream.csv", index = False)
