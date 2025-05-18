@@ -26,8 +26,6 @@ class Collect_Network_Traffic(threading.Thread):
         try:
             subprocess.run(command, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
-            # print("Hi")
-            # print(os.path.exists(self.__pcap))
             print(e)
 
     def convert_pcap_to_csv_through_cicflowmeter(self):
@@ -59,5 +57,3 @@ class Collect_Network_Traffic(threading.Thread):
                 self.convert_pcap_to_csv_through_cicflowmeter()
             except Exception as e:
                 print(e)
-
-# Collect_Network_Traffic().run()

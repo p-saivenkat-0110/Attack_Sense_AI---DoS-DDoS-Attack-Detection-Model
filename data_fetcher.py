@@ -232,7 +232,7 @@ class Preprocessing(Normalization):
             df[col] = df[col].interpolate(method='linear')
         df = df.reset_index(drop=True)
         df = self.z_score_normalization(df)
-        return df
+        return df 
     
     def merge_network_system(self, network, system, label):
         merged_df = pd.merge(network, system, on='Timestamp', how='left')
