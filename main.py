@@ -86,10 +86,10 @@ class HyNetSys:
     def __observe_network_and_system_data(self):
         print("----------------------------------------------")
         print(self.network_data_collector.name, "=> started... running...")
-        # self.network_data_collector.start()
+        self.network_data_collector.start()
 
         print(self.system_data_collector.name, "=> started... running...")
-        # self.system_data_collector.start()
+        self.system_data_collector.start()
         print("----------------------------------------------\n\n")
         print("******************************************************\n**  Observing Network Traffic & System Metrics...   **\n******************************************************\n\n")
 
@@ -105,24 +105,17 @@ class HyNetSys:
         net_sys_update_timer = 0
         status_timer = 0
 
-        for timestamp in sorted(list(set(self.fetcher.net_sys_stream['Timestamp']))):
-            if(status_timer==0):
-                self.pipeline_status()
-            status_timer = (status_timer+1)%30
-            self.queues[0].put(timestamp)
-            sleep(1)
-
         while True:
             if(status_timer==0):
                 self.pipeline_status()
             status_timer = (status_timer+1)%30
             
-            # if(net_sys_update_timer==0):
-            #     self.update_net_sys_stream()
-            # net_sys_update_timer = (net_sys_update_timer+1)%5
+            if(net_sys_update_timer==0):
+                self.update_net_sys_stream()
+            net_sys_update_timer = (net_sys_update_timer+1)%5
 
-            # current_timestamp = datetime.now()
-            # self.queues[0].put(current_timestamp)
+            current_timestamp = datetime.now()
+            self.queues[0].put(current_timestamp)
             sleep(1)
 
     def update_net_sys_stream(self):  
@@ -200,7 +193,7 @@ try:
     
 except KeyboardInterrupt:
     print("Exiting pipeline...")
-    # hynetsys_object.system_data_collector.stop_collection()
-    # hynetsys_object.network_data_collector.append_to_network_stream()
+    hynetsys_object.system_data_collector.stop_collection()
+    hynetsys_object.network_data_collector.append_to_network_stream()
 except Exception as error:
     print(error)
