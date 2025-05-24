@@ -2,7 +2,7 @@ from time import sleep
 from datetime import datetime
 from queue import Queue
 from pipeline_architecture import *
-from data_preprocessing import *
+from data_preprocessing import Data_Preprocessing
 from collect_network_traffic import *
 from collect_system_metrics import *
 
@@ -20,10 +20,11 @@ class HyNetSys:
         self.__dataCollectorPath = "NET_SYS"
         self.system_data_collector  = self.__initialize_system_metrics_collector()
         self.network_data_collector = self.__initialize_network_traffic_collector()
-        self.fetcher   = self.__initialize_window_fetcher()
-        self.queues    = self.__initialize_queues(choosen_models)
-        self.models    = self.__initialize_models(model_paths, choosen_models)
-        self.executers = self.__initialize_pipeline(choosen_models)
+        self.fetcher                = self.__initialize_window_fetcher()
+        self.data_preprocessor      = self.__initialize_data_preprocessor()
+        self.queues                 = self.__initialize_queues(choosen_models)
+        self.models                 = self.__initialize_models(model_paths, choosen_models)
+        self.executers              = self.__initialize_pipeline(choosen_models)
         self.__observe_network_and_system_data()
     
     def __initialize_system_metrics_collector(self):
@@ -46,6 +47,13 @@ class HyNetSys:
         print("       Initialized Data Fetcher...")
         print("----------------------------------------\n")
         return fetcher
+    
+    def __initialize_data_preprocessor(self):
+        data_preprocessor = Data_Preprocessing()
+        print("----------------------------------------")
+        print("    Initialized Data Preprocessor...")
+        print("----------------------------------------\n")
+        return data_preprocessor
 
     def __initialize_queues(self, choosen_models):
         queues_required = len(choosen_models)
@@ -119,11 +127,8 @@ class HyNetSys:
             sleep(1)
 
     def update_net_sys_stream(self):  
-        preprocessor = Data_Preprocessing(self.__dataCollectorPath)
-        network_df = preprocessor.dataset.network
-        system_df  = preprocessor.dataset.system
-        merged_df  = preprocessor.preprocess(network_df, system_df)
-        merged_df.to_csv(f"./{self.__dataCollectorPath}/net_sys_stream.csv", index = False)
+        updated_stream = self.data_preprocessor.fetch_latest_data(self.__dataCollectorPath)
+        updated_stream.to_csv(f"./{self.__dataCollectorPath}/net_sys_stream.csv", index = False)
 
     def pipeline_status(self):
         print("\n--- Model Status ---")
