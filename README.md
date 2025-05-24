@@ -19,3 +19,12 @@ HyNetSys combines system performance metrics (CPU, memory, disk I/O) with networ
 - _Temporal Windowing_: Aggregation into 1–5 minute windows to capture sequential attack patterns.
 - _Deep Learning Models_: Training and evaluation of deep learning architectures.
 - _Pipelined Architecture for Early and Accurate Detection_: To address the trade-off between accuracy (higher with longer windows) and timeliness (faster with shorter windows), a pipelined evaluation strategy was developed.
+
+# Requirements
+1) **tshark (installed with Wireshark)**
+   - Add `Wireshark` location to user variables PATH
+2) **CICFLOWMETER** (install from here : https://github.com/ahlashkari/CICFlowMeter)
+   - Make package and copy that package in this folder
+3) **pip install -r requirements.txt**
+
+!!! *Any doubts/errors, please create an issue so we could follow up on it...* !!!
