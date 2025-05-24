@@ -26,3 +26,5 @@ HyNetSys combines system performance metrics (CPU, memory, disk I/O) with networ
 2) **CICFLOWMETER** (install from here : https://github.com/ahlashkari/CICFlowMeter)
    - Make package and copy that package in this folder
 3) **pip install -r requirements.txt**
+
+!!! *Any doubts/errors, please create an issue so we could follow up on it...* !!!
