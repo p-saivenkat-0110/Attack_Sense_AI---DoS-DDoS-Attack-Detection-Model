@@ -28,3 +28,8 @@ HyNetSys combines system performance metrics (CPU, memory, disk I/O) with networ
 3) **pip install -r requirements.txt**
 
 !!! *Any doubts/errors, please create an issue so we could follow up on it...* !!!
+
+# How to Run?
+- Open terminal as Administrator & change directory to this project.
+- run `python main.py`
+-- **follow steps as instructed**
