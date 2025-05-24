@@ -37,8 +37,9 @@ class Window_Fetcher:
         return windowed_df
     
 class Parallel_Executer(threading.Thread):
-    def __init__(self, name, model, window_fetcher, queue_in, queue_out, window_size):
+    def __init__(self, name, model, window_fetcher, queue_in, queue_out, window_size, shutdown_event):
         super().__init__()
+        self.shutdown_event = shutdown_event
         self.name = name
         self.model = model
         self.window_fetcher = window_fetcher
@@ -56,10 +57,10 @@ class Parallel_Executer(threading.Thread):
                     timeout=5
                 )
         sleep(0.1)
-        os.kill(os.getpid(), signal.SIGINT)
+        self.shutdown_event.set()
 
     def run(self):
-        while True:
+        while not self.shutdown_event.is_set():
             if self.queue_in.empty():
                 continue
             timestamp = self.queue_in.get()

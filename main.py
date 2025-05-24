@@ -8,6 +8,7 @@ from collect_system_metrics import *
 
 class HyNetSys:
     def __init__(self, choosen_models):
+        self.shutdown_event = threading.Event()
         model_paths = [
             None,
             "./GRU_models/Layer 2/GRU_1min.h5",
@@ -35,7 +36,7 @@ class HyNetSys:
         return system_data_collector_object
 
     def __initialize_network_traffic_collector(self):
-        network_data_collector_object = Collect_Network_Traffic()
+        network_data_collector_object = Collect_Network_Traffic(self.shutdown_event)
         print("----------------------------------------")
         print("  Initialized Network Data Collector...")
         print("----------------------------------------\n")
@@ -83,7 +84,8 @@ class HyNetSys:
                 f"GRU-{choosen_models[index]}min", self.models[index],
                 self.fetcher,
                 self.queues[index], self.queues[index+1],
-                choosen_models[index]
+                choosen_models[index],
+                self.shutdown_event
             )
             executers.append(exe)
         print("*")
@@ -113,7 +115,7 @@ class HyNetSys:
         net_sys_update_timer = 0
         status_timer = 0
 
-        while True:
+        while not self.shutdown_event.is_set():
             if(status_timer==0):
                 self.pipeline_status()
             status_timer = (status_timer+1)%30
@@ -125,6 +127,8 @@ class HyNetSys:
             current_timestamp = datetime.now()
             self.queues[0].put(current_timestamp)
             sleep(1)
+        
+        self.exit_clean_up()
 
     def update_net_sys_stream(self):  
         updated_stream = self.data_preprocessor.fetch_latest_data(self.__dataCollectorPath)
@@ -141,6 +145,15 @@ class HyNetSys:
             if queue:
                 print(f"Q{index} -> {queue.qsize()}")
         print("--------------------------------------------\n\n")
+
+    def exit_clean_up(self):
+        self.system_data_collector.stop_collection()
+        self.network_data_collector.stop_collection()
+        self.network_data_collector.join()
+        for executer in self.executers:
+            executer.join()
+        print("Exiting pipeline...")
+
 try:
     print()
     print("**************************")
@@ -195,10 +208,11 @@ try:
     print()
     hynetsys = HyNetSys(choosen_models)
     hynetsys.activate_and_run_pipeline()
-    hynetsys.feedDataToPipeline()    
-    
+    hynetsys.feedDataToPipeline()
+
 except KeyboardInterrupt:
     print("Exiting pipeline...")
+    hynetsys.shutdown_event.set()
     hynetsys.system_data_collector.stop_collection()
     hynetsys.network_data_collector.stop_collection()
 except Exception as error:

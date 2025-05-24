@@ -1,14 +1,12 @@
-import threading
 import subprocess
 import os
 import re
 from sys import stdout
 from time import sleep
 
-class Collect_System_Metrics(threading.Thread):
+class Collect_System_Metrics:
     def __init__(self):
         super().__init__()
-        self.daemon = True
         self.name = "System  Data Collector"
         self.__DCS_NAME = "system_stream"
         dcs_not_exists = True
@@ -78,6 +76,9 @@ class Collect_System_Metrics(threading.Thread):
                 print("\n\n")
             except:
                 pass
+
+    def start(self):
+        self.run()
 
     def run(self):
         try:

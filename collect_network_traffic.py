@@ -4,8 +4,9 @@ import threading
 import pandas as pd
 
 class Collect_Network_Traffic(threading.Thread):
-    def __init__(self):
+    def __init__(self, shutdown_event):
         super().__init__()
+        self.shutdown_event = shutdown_event
         self.daemon = True
         self.name = "Network Data Collector"
         self.__CICFLOWMETER = r'.\CICFlowMeter-4.0\bin\cfm.bat'
@@ -54,7 +55,7 @@ class Collect_Network_Traffic(threading.Thread):
             print(e)
 
     def run(self):
-        while True:
+        while not self.shutdown_event.is_set():
             try:
                 self.__capture_network_data_through_tshark()
                 self.__convert_pcap_to_csv_through_cicflowmeter()
