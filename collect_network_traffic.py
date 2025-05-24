@@ -16,7 +16,7 @@ class Collect_Network_Traffic(threading.Thread):
         self.__pcap = os.path.join(self.__OUTPUT_DIR, "stream.pcap")
         self.__csv  = os.path.join(self.__OUTPUT_DIR, "network_stream.csv")
 
-    def capture_network_data_through_tshark(self):
+    def __capture_network_data_through_tshark(self):
         command  =  [
                         'tshark', '-i', self.__CAPTURE_INTERFACE,
                         '-a', f'duration:{self.__CAPTURE_DURATION}',
@@ -28,32 +28,39 @@ class Collect_Network_Traffic(threading.Thread):
         except Exception as e:
             print(e)
 
-    def convert_pcap_to_csv_through_cicflowmeter(self):
+    def __convert_pcap_to_csv_through_cicflowmeter(self):
         command = [self.__CICFLOWMETER, self.__pcap, self.__OUTPUT_DIR]
         try:
             subprocess.run(command, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self.append_to_network_stream()
+            self.__append_to_network_stream()
         except Exception as e:
             print(e)
 
-    def append_to_network_stream(self):
-        generated_csv = None
-        for file in os.listdir(self.__OUTPUT_DIR):
-            if file.endswith(".csv") and file != os.path.basename(self.__csv):
-                generated_csv = os.path.join(self.__OUTPUT_DIR, file)
-                break
-        if generated_csv and os.path.isfile(generated_csv):
-            df = pd.read_csv(generated_csv)
-            if os.path.isfile(self.__csv):
-                df.to_csv(self.__csv, mode='a', header=False, index=False)
-            else:
-                df.to_csv(self.__csv, index=False)
-            os.remove(generated_csv)
+    def __append_to_network_stream(self):
+        try:
+            generated_csv = None
+            for file in os.listdir(self.__OUTPUT_DIR):
+                if file.endswith(".csv") and file != os.path.basename(self.__csv):
+                    generated_csv = os.path.join(self.__OUTPUT_DIR, file)
+                    break
+            if generated_csv and os.path.isfile(generated_csv):
+                df = pd.read_csv(generated_csv)
+                if os.path.isfile(self.__csv):
+                    df.to_csv(self.__csv, mode='a', header=False, index=False)
+                else:
+                    df.to_csv(self.__csv, index=False)
+                os.remove(generated_csv)
+        except Exception as e:
+            print(e)
 
     def run(self):
-        while True:            
+        while True:
             try:
-                self.capture_network_data_through_tshark()
-                self.convert_pcap_to_csv_through_cicflowmeter()
+                self.__capture_network_data_through_tshark()
+                self.__convert_pcap_to_csv_through_cicflowmeter()
             except Exception as e:
+                self.stop_collection()
                 print(e)
+    
+    def stop_collection(self):
+        self.__append_to_network_stream()

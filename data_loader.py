@@ -3,6 +3,9 @@ import pandas as pd
 
 # `Load_Data` class loads network and system data from specified folders in a dataset.
 class Load_Data:
+    def __init__(self):
+        self.__empty_df = pd.DataFrame()
+
     def load_data(self,folder,system_columns):
         """ LOAD NETWORK & SYSTEM DATA """
         return self.__load_Network_System_from(folder,system_columns)
@@ -11,7 +14,7 @@ class Load_Data:
         folder = os.path.join(os.getcwd(),f"{folder}")
 
         """ LOAD NETWORK DATA """
-        network_df  = None
+        network_df  = self.__empty_df
         network_csv = os.path.join(folder, r"NETWORK\network_stream.csv")
         if os.path.isfile(network_csv):
             network_df = pd.read_csv(network_csv)
@@ -19,7 +22,7 @@ class Load_Data:
             network_df['Timestamp'] = network_df['Timestamp'].dt.strftime("%m/%d/%Y %H:%M:%S")
 
         """ LOAD SYSTEM DATA """
-        system_df  = None
+        system_df  = self.__empty_df
         system_csv = os.path.join(folder, r"SYSTEM\system_stream.csv")
         if os.path.isfile(system_csv):
             system_df = pd.read_csv(system_csv)

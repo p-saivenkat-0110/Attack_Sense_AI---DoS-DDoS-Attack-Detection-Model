@@ -170,6 +170,7 @@ class Normalization(Utilities):
 class Data_Preprocessing(Normalization):
     def __init__(self):
         super().__init__()
+        self.__empty_df = pd.DataFrame()
         self.data_loader = Load_Data()
 
     def __add_Timestamp(self,df):
@@ -214,7 +215,7 @@ class Data_Preprocessing(Normalization):
     
     def fetch_latest_data(self, folder):
         network_df, system_df = self.data_loader.load_data(folder, self.system_columns)
-        if (network_df.empty | system_df.empty): return None
+        if (network_df.empty | system_df.empty): return self.__empty_df
         return self.preprocess(network_df, system_df)
 
     def preprocess(self, network_df, system_df, label=-1):

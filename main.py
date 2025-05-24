@@ -193,13 +193,13 @@ try:
 
     print()
     print()
-    hynetsys_object = HyNetSys(choosen_models)
-    hynetsys_object.activate_and_run_pipeline()
-    hynetsys_object.feedDataToPipeline()    
+    hynetsys = HyNetSys(choosen_models)
+    hynetsys.activate_and_run_pipeline()
+    hynetsys.feedDataToPipeline()    
     
 except KeyboardInterrupt:
     print("Exiting pipeline...")
-    hynetsys_object.system_data_collector.stop_collection()
-    hynetsys_object.network_data_collector.append_to_network_stream()
+    hynetsys.system_data_collector.stop_collection()
+    hynetsys.network_data_collector.stop_collection()
 except Exception as error:
     print(error)
