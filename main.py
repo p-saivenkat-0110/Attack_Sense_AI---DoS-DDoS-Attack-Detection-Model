@@ -201,5 +201,6 @@ except KeyboardInterrupt:
     print("Exiting pipeline...")
     hynetsys_object.system_data_collector.stop_collection()
     hynetsys_object.network_data_collector.append_to_network_stream()
+
 except Exception as error:
     print(error)
