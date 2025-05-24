@@ -128,7 +128,8 @@ class HyNetSys:
 
     def update_net_sys_stream(self):  
         updated_stream = self.data_preprocessor.fetch_latest_data(self.__dataCollectorPath)
-        updated_stream.to_csv(f"./{self.__dataCollectorPath}/net_sys_stream.csv", index = False)
+        if not updated_stream.empty:
+            updated_stream.to_csv(f"./{self.__dataCollectorPath}/net_sys_stream.csv", index = False)
 
     def pipeline_status(self):
         print("\n--- Model Status ---")

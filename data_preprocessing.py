@@ -214,6 +214,7 @@ class Data_Preprocessing(Normalization):
     
     def fetch_latest_data(self, folder):
         network_df, system_df = self.data_loader.load_data(folder, self.system_columns)
+        if (network_df.empty | system_df.empty): return None
         return self.preprocess(network_df, system_df)
 
     def preprocess(self, network_df, system_df, label=-1):
