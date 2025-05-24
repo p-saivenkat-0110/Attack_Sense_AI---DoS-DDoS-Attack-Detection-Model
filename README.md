@@ -32,4 +32,4 @@ HyNetSys combines system performance metrics (CPU, memory, disk I/O) with networ
 # How to Run?
 - Open terminal as Administrator & change directory to this project.
 - run `python main.py`
--- **follow steps as instructed**
+-- ***follow steps as instructed by program***
