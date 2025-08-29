@@ -2,6 +2,7 @@ import subprocess
 import os
 import threading
 import pandas as pd
+from time import sleep
 
 class Collect_Network_Traffic(threading.Thread):
     def __init__(self, shutdown_event):
@@ -65,3 +66,6 @@ class Collect_Network_Traffic(threading.Thread):
     
     def stop_collection(self):
         self.__append_to_network_stream()
+        sleep(1)
+        if os.path.exists(self.__pcap) : os.remove(self.__pcap)
+        if os.path.exists(self.__csv)  : os.remove(self.__csv)

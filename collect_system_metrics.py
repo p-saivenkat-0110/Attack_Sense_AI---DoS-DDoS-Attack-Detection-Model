@@ -6,9 +6,9 @@ from time import sleep
 
 class Collect_System_Metrics:
     def __init__(self):
-        super().__init__()
         self.name = "System  Data Collector"
         self.__DCS_NAME = "system_stream"
+        self.LOG_OUTPUT_DIR  = r".\NET_SYS\SYSTEM"
         dcs_not_exists = True
         try:
             output = subprocess.check_output(["logman", "query"], text=True)
@@ -22,6 +22,7 @@ class Collect_System_Metrics:
                 all_network_interface_list = subprocess.check_output(["typeperf", "-qx", r"\Network Interface"], text=True)
                 current_bandwidth_interfaces = re.findall(r'\\Network Interface\((.*?)\)\\Current Bandwidth', all_network_interface_list)
                 wifi_interface = None
+
                 for interface in current_bandwidth_interfaces:
                     iface = interface.lower()
                     if "wi-fi" in iface:
@@ -41,9 +42,7 @@ class Collect_System_Metrics:
                 print("Error detecting network interfaces:", e)
                 wifi_counter = r"\Network Interface(*)\Current Bandwidth"
 
-
-            LOG_OUTPUT_DIR  = r".\NET_SYS\SYSTEM"
-            SAMPLE_INTERVAL = "00:00:01"
+            SAMPLE_INTERVAL = "1"
             counters =  [
                             r"\Memory\% Committed Bytes In Use",
                             wifi_counter,
@@ -61,7 +60,7 @@ class Collect_System_Metrics:
                     "-c", *counters,
                     "-si", SAMPLE_INTERVAL,
                     "-f", "csv", 
-                    "-o", os.path.join(LOG_OUTPUT_DIR, self.__DCS_NAME), 
+                    "-o", os.path.join(self.LOG_OUTPUT_DIR, self.__DCS_NAME), 
                     "-a"
                   ]
 
@@ -74,7 +73,7 @@ class Collect_System_Metrics:
                     stdout.flush()
                     sleep(1)
                 print("\n\n")
-            except:
+            except Exception as e:
                 pass
 
     def start(self):
@@ -92,3 +91,6 @@ class Collect_System_Metrics:
             subprocess.run(["logman", "stop", self.__DCS_NAME], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
             print(e)
+        sleep(1)
+        file = os.path.join(self.LOG_OUTPUT_DIR, self.__DCS_NAME+".csv")
+        if os.path.exists(file) : os.remove(file)

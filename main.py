@@ -213,7 +213,6 @@ try:
 except KeyboardInterrupt:
     print("Exiting pipeline...")
     hynetsys.shutdown_event.set()
-    hynetsys.system_data_collector.stop_collection()
-    hynetsys.network_data_collector.stop_collection()
+    # hynetsys.exit_clean_up()
 except Exception as error:
     print(error)

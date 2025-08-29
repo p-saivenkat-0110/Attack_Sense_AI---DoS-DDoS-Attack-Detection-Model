@@ -20,6 +20,7 @@ class Model:
 class Window_Fetcher:
     def __init__(self):
         self.__data_path = os.path.join(os.getcwd(),"NET_SYS/net_sys_stream.csv")
+        # self.net_sys_stream = pd.read_csv(self.__data_path, parse_dates=['Timestamp'])
 
     def fetch_past_K_minute_data(self, timestamp, window_size):
         try:
