@@ -27,9 +27,11 @@ HyNetSys combines system performance metrics (CPU, memory, disk I/O) with networ
    - Add `Wireshark` location to user variables PATH
 2) **Install JDK 21(Java Development Kit)**
    - Make sure java is added to system environment variables
-2) **CICFLOWMETER** (install from here : https://github.com/ahlashkari/CICFlowMeter)
+3) **CICFLOWMETER** (install from here : https://github.com/ahlashkari/CICFlowMeter)
    - Make package and copy that package in this folder
-3) **pip install -r requirements.txt**
+4) **pip install -r requirements.txt**
+
+5) *(Optional) If any dependency issue occurs, use python 3.11.0*
 
 !!! *Any doubts/errors, please create an issue so we could follow up on it...* !!!
 
