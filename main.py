@@ -1,10 +1,10 @@
 from time import sleep
 from datetime import datetime
 from queue import Queue
-from pipeline_architecture import *
-from data_preprocessing import Data_Preprocessing
+from data_loader import LoadData
 from collect_network_traffic import *
 from collect_system_metrics import *
+from pipeline_architecture import *
 
 class HyNetSys:
     def __init__(self, choosen_models):
@@ -18,122 +18,51 @@ class HyNetSys:
             "./GRU_models/Layer 1/GRU_5min.h5"
         ]
 
-        self.__dataCollectorPath = "NET_SYS"
-        self.system_data_collector  = self.__initialize_system_metrics_collector()
-        self.network_data_collector = self.__initialize_network_traffic_collector()
-        self.fetcher                = self.__initialize_window_fetcher()
-        self.data_preprocessor      = self.__initialize_data_preprocessor()
-        self.queues                 = self.__initialize_queues(choosen_models)
-        self.models                 = self.__initialize_models(model_paths, choosen_models)
-        self.executers              = self.__initialize_pipeline(choosen_models)
+        self.system_data_collector = Collect_System_Metrics()
+        print("----------------------------------------")
+        print("|  Initialized System Data Collector   |")
+        print("----------------------------------------")
+                
+        self.network_data_collector = Collect_Network_Traffic(self.shutdown_event)
+        print("|  Initialized Network Data Collector  |")
+        print("----------------------------------------")
+
+        self.load_data = LoadData()
+        print("|  Initialized Data Loader             |")
+        print("----------------------------------------")
+
+        self.queues = [Queue() for _ in range(len(choosen_models))] + [None]
+        print("|  Initialized Queue(s)                |")
+        print("----------------------------------------")
+
+        self.models = [Model(model_paths[model]) for model in choosen_models]
+        print("|  Models Setup Successful             |")
+        print("----------------------------------------\n")
+
+        self.executers = [Parallel_Executer(f"GRU-{choosen_models[index]}min", self.models[index], self.load_data, self.queues[index], self.queues[index+1], choosen_models[index], self.shutdown_event) for index in range(len(choosen_models))]
+        print("\n----------------------------------------")
+        print("|  Pipeline Initialization Successful  |")
+        print("----------------------------------------\n\n")
+
         self.__observe_network_and_system_data()
-    
-    def __initialize_system_metrics_collector(self):
-        system_data_collector_object = Collect_System_Metrics()
-        print("----------------------------------------")
-        print("  Initialized System Data Collector...")
-        print("----------------------------------------\n")
-        return system_data_collector_object
-
-    def __initialize_network_traffic_collector(self):
-        network_data_collector_object = Collect_Network_Traffic(self.shutdown_event)
-        print("----------------------------------------")
-        print("  Initialized Network Data Collector...")
-        print("----------------------------------------\n")
-        return network_data_collector_object
-
-    def __initialize_window_fetcher(self):
-        fetcher = Window_Fetcher()
-        print("----------------------------------------")
-        print("       Initialized Data Fetcher...")
-        print("----------------------------------------\n")
-        return fetcher
-    
-    def __initialize_data_preprocessor(self):
-        data_preprocessor = Data_Preprocessing()
-        print("----------------------------------------")
-        print("    Initialized Data Preprocessor...")
-        print("----------------------------------------\n")
-        return data_preprocessor
-
-    def __initialize_queues(self, choosen_models):
-        queues_required = len(choosen_models)
-        queues = []
-        for _ in range(queues_required):
-            queues.append(Queue())
-        queues.append(None)
-        print("----------------------------------------")
-        print("        Initialized Queue(s)...")
-        print("----------------------------------------\n")
-        return queues
-
-    def __initialize_models(self, model_paths, choosen_models):
-        models = []
-        for model in choosen_models:
-            models.append(Model(model_paths[model]))
-        print("----------------------------------------")
-        print("       Models Setup Successful...")
-        print("----------------------------------------\n")
-        return models
-
-    def __initialize_pipeline(self, choosen_models):
-        print("----------------------------------------")
-        executers = []
-        for index in range(len(choosen_models)):
-            exe = Parallel_Executer(
-                f"GRU-{choosen_models[index]}min", self.models[index],
-                self.fetcher,
-                self.queues[index], self.queues[index+1],
-                choosen_models[index],
-                self.shutdown_event
-            )
-            executers.append(exe)
-        print("*")
-        print("Pipeline Initialization Successful...")
-        print("----------------------------------------\n")
-        return executers
 
     def __observe_network_and_system_data(self):
-        print("----------------------------------------------")
-        print(self.network_data_collector.name, "=> started... running...")
+        print("------------------------------------")
+        print(self.network_data_collector.name, "=> running...")
         self.network_data_collector.start()
 
-        print(self.system_data_collector.name, "=> started... running...")
+        print(self.system_data_collector.name,  "=> running...")
         self.system_data_collector.start()
-        print("----------------------------------------------\n\n")
+        print("------------------------------------\n")
         print("******************************************************\n**  Observing Network Traffic & System Metrics...   **\n******************************************************\n\n")
 
-    def activate_and_run_pipeline(self):
-        print("----------------------------------------")
+    def activate_pipeline(self):
+        print("------------------------------")
         for executer in self.executers:
-            print(executer.name, "=> started... running...")
+            print(executer.name, "=> running...")
             executer.start()
-        print("----------------------------------------\n\n")
+        print("------------------------------\n")
         print("***************************\n**  Pipeline Activated   **\n***************************\n\n")
-
-    def feedDataToPipeline(self):
-        net_sys_update_timer = 0
-        status_timer = 0
-
-        while not self.shutdown_event.is_set():
-            if(status_timer==0):
-                self.pipeline_status()
-            status_timer = (status_timer+1)%30
-            
-            if(net_sys_update_timer==0):
-                self.update_net_sys_stream()
-            net_sys_update_timer = (net_sys_update_timer+1)%5
-
-            current_timestamp = datetime.now()
-            self.queues[0].put(current_timestamp)
-            sleep(1)
-        
-        self.exit_clean_up()
-
-    def update_net_sys_stream(self):  
-        updated_stream = self.data_preprocessor.fetch_latest_data(self.__dataCollectorPath)
-        if not updated_stream.empty:
-            updated_stream.to_csv(f"./{self.__dataCollectorPath}/net_sys_stream.csv", index = False)
 
     def pipeline_status(self):
         print("\n--- Model Status ---")
@@ -146,15 +75,39 @@ class HyNetSys:
                 print(f"Q{index} -> {queue.qsize()}")
         print("--------------------------------------------\n\n")
 
-    def exit_clean_up(self):
-        self.system_data_collector.stop_collection()
-        self.network_data_collector.stop_collection()
-        self.network_data_collector.join()
-        for executer in self.executers:
-            executer.join()
-        print("Exiting pipeline...")
 
-try:
+    def feedDataToPipeline(self):
+        net_sys_update_timer = 0
+        status_timer = 0
+
+        while not self.shutdown_event.is_set():
+            if(status_timer==0):
+                self.pipeline_status()
+            status_timer = (status_timer+1)%30
+            
+            if(net_sys_update_timer==0):
+                self.load_data.update_net_sys_stream()
+            net_sys_update_timer = (net_sys_update_timer+1)%5
+
+            current_timestamp = datetime.now()
+            self.queues[0].put(current_timestamp)
+            sleep(1)
+        
+    def run(self):
+        self.activate_pipeline()
+        self.feedDataToPipeline()
+
+    def __del__(self):
+        try:
+            self.system_data_collector.stop_collection()
+            self.network_data_collector.stop_collection()
+            self.network_data_collector.join()
+            for executer in self.executers:
+                executer.join()
+        except:
+            pass
+
+def banner():
     print()
     print("**************************")
     print("*                        *")
@@ -163,10 +116,12 @@ try:
     print("**************************")
     print()
 
+def welcome_msg():
     print("-----------------------------------------------------------")
     print("WELCOME!! CUSTOMIZE ARCHITECTURE BASED ON YOUR REQUIREMENTS")
     print("-----------------------------------------------------------\n")
 
+def pipeline_architecture_options():
     print("Choose models by entering numbers:\n *")
     print("(1) ->  1-Min Model")
     print("(2) ->  2-Min Model")
@@ -174,8 +129,10 @@ try:
     print("(4) ->  4-Min Model")
     print("(5) ->  5-Min Model")
     print(" *\nPress (0) -> To save architecture & start...\n")
+
+
+def customized_pipeline_architecture():
     choosen_models = []
-    
     while True:
         try:
             model_number = int(input("Enter your choice : "))
@@ -184,14 +141,10 @@ try:
 
         if(model_number==0):
             if choosen_models:
-                print("\n==> Architecture Saved!! Starting...")
+                print("\n==> Architecture Saved!! Starting...\n")
                 break
             else:
                 raise Exception("No models choosen...")
-
-        if len(choosen_models)==5:
-            print("\n==> All models choosed!! Press (0) -> To save architecture & start...\n")
-            continue
 
         if(model_number in [1,2,3,4,5]):
             if(model_number in choosen_models):
@@ -199,20 +152,29 @@ try:
             else:
                 choosen_models.append(model_number)
                 print(f"\t\t\t---------- {model_number}-Min Model added ----------")
-                if len(choosen_models)==5:
-                    print("\n==> All models choosed!! Press (0) -> To save architecture & start...\n")
+            if len(choosen_models)==5:
+                print("\n==> All models choosed!! Press (0) -> To save architecture & start...\n")
         else:
             print("\n==> Invalid choice!!\n")
 
-    print()
-    print()
-    hynetsys = HyNetSys(choosen_models)
-    hynetsys.activate_and_run_pipeline()
-    hynetsys.feedDataToPipeline()
+    return choosen_models
 
-except KeyboardInterrupt:
-    print("Exiting pipeline...")
-    hynetsys.shutdown_event.set()
-    # hynetsys.exit_clean_up()
-except Exception as error:
-    print(error)
+def main():
+    try:
+        banner()
+        welcome_msg()
+        pipeline_architecture_options()
+        user_defined_architecture = customized_pipeline_architecture()
+        hynetsys = HyNetSys(user_defined_architecture)
+        hynetsys.run()
+        del hynetsys
+
+    except KeyboardInterrupt:
+        hynetsys.shutdown_event.set()
+        del hynetsys
+        print("!! Process Terminated Successfully !!")
+    except Exception as e:
+        print(e)
+
+if __name__=='__main__':
+    main()
