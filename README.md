@@ -101,7 +101,7 @@ manuscript under review.
 
 Dataset citation:
 ```
-Umesh Tata, Sai Venkat Peruri, Shalem Vikranth Pulukuri, Narendran Rajagopalan, "HyNetSys: Hybrid Network and System Dataset for DoS and DDoS Attack Detection", IEEE Dataport, April 22, 2025, doi:10.21227/xn7t-jj98
+Tata Umesh, Peruri Sai Venkat, Pulukuri Shalem Vikranth, Narendran Rajagopalan, "HyNetSys: Hybrid Network and System Dataset for DoS and DDoS Attack Detection", IEEE Dataport, April 22, 2025, doi:10.21227/xn7t-jj98
 ```
 
 > *This section will be updated with full journal details upon acceptance.*
